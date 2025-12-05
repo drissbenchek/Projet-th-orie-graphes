@@ -1,0 +1,188 @@
+import algorithmes.*;
+import controleur.ControleurGraphe;
+import modele.*;
+import utils.Utils;
+import vue.VueConsole;
+import java.util.*;
+
+public class Main {
+    private static ControleurGraphe controleur;
+    private static VueConsole vue;
+
+    public static void main(String[] args) {
+        Utils.afficherTitre("PROJET THÉORIE DES GRAPHES - COLLECTE DES DÉCHETS 2025");
+        System.out.println("                   ECE PARIS - ING2");
+        Utils.afficherSeparateur();
+
+        initialiser();
+        menuPrincipal();
+
+        System.out.println("\nAu revoir ! Merci d'avoir optimisé la collecte des déchets !");
+        Utils.close();
+    }
+
+    private static void initialiser() {
+        // Héritage en action
+        Collectivite collectivite = new Collectivite("Mairie Paris");
+        EntrepriseCollecte entreprise = new EntrepriseCollecte("GreenCollect", 8, 10.0, collectivite);
+
+        // Présentation des acteurs
+        collectivite.presenter();
+        entreprise.presenter();
+
+        // Graphe par défaut : petite commune (7 sommets, IDs A à G)
+        collectivite.setPlanCommune(GenerateurGraphes.creerPetiteCommune());
+
+        controleur = new ControleurGraphe(collectivite, entreprise);
+        vue = new VueConsole();
+
+        System.out.println("Système initialisé avec succès !");
+        System.out.println("Graphe par défaut : Petite commune (7 sommets)");
+    }
+
+    private static void menuPrincipal() {
+        while (true) {
+            Utils.afficherSeparateur();
+            System.out.println("                   MENU PRINCIPAL");
+            Utils.afficherSeparateur();
+            System.out.println("1. Collectivité");
+            System.out.println("2. Entreprise de collecte");
+            System.out.println("3. Quitter");
+            System.out.print("Choix:  ");
+
+            int choix = Utils.lireEntier();
+            switch (choix) {
+                case 1 -> menuCollectivite();
+                case 2 -> menuEntreprise();
+                case 3 -> {
+                    return;
+                }
+                default -> System.out.println("Choix invalide !");
+            }
+        }
+    }
+
+    private static void menuCollectivite() {
+        while (true) {
+            Utils.afficherTitre("COLLECTIVITÉ - " + controleur.getCollectivite().getNom());
+            System.out.println("1. Charger un graphe fictif");
+            System.out.println("2. Consulter les quantités de déchets");
+            System.out.println("3. Consulter le plan actuel");
+            System.out.println("4. Retour");
+            System.out.print("Choix : ");
+
+            int choix = Utils.lireEntier();
+            switch (choix) {
+                case 1:
+                    GenerateurGraphes.afficherTypesGraphes();
+                    int type = Utils.lireEntier("Type de graphe → ");
+                    controleur.chargerGraphe(type);
+                    System.out.println("Nouveau plan chargé avec succès !");
+                    break;
+                case 2:
+                    vue.consulterQuantitesDechets(controleur.getGraphe());
+                    break;
+                case 3:
+                    // vue.afficherGraphe(controleur.getGraphe());
+                    vue.afficherPlanActuel(controleur.getGraphe());
+                    break;
+                case 4:
+                    return;
+                default:
+                    System.out.println("Choix invalide !");
+            }
+        }
+    }
+
+    private static void menuEntreprise() {
+        while (true) {
+            Utils.afficherTitre("ENTREPRISE - THÈMES 1 & 2");
+            System.out.println("1. Thème 1-a - Encombrants ( Dijkstra )");
+            System.out.println("2. Thème 1-a - Tournée encombrants (<=12 - TSP exact)");
+            System.out.println("3. Thème 1-b - Poubelles domicile (Postier Chinois)");
+            System.out.println("4. Thème 2   - Approche 1 : Plus Proche Voisin");
+            System.out.println("5. Thème 2 - Approche 2 : MST + Shortcutting");
+            System.out.println("6. Retour");
+            System.out.print("Choix : ");
+
+            int choix = Utils.lireEntier();
+            Graphe g = controleur.getGraphe();
+
+            switch (choix) {
+                case 1: // Un seul encombrant
+                    Utils.afficherTitre("THÈME 1.a - RAMASSAGE D'UN ENCOMBRANT");
+                    System.out.print("ID du sommet destination : ");
+                    String id = Utils.lireLigne().trim().toUpperCase();
+                    Sommet dest = g.getSommetParId(id);
+                    if (dest != null && !dest.equals(g.getDepot())) {
+                        ControleurGraphe.ResultatChemin res = controleur.calculerPlusCourtCheminAvecDistance(dest);
+                        vue.afficherCheminAvecDistance(res);
+                    } else {
+                        System.out.println("Sommet invalide !");
+                    }
+                    Utils.appuyerPourContinuer();
+                    break;
+
+                case 2: // TSP exact
+                    Utils.afficherTitre("THÈME 1a - TOURNÉE ENCOMBRANTS (TSP EXACT)");
+                    List<Sommet> points = new ArrayList<>();
+                    System.out.println("Entrez les IDs (ex: B C E), Entrée = finir :");
+
+                    while (true) {
+                        String ligne = Utils.lireLigne("---> ");
+                        if (ligne.isEmpty())
+                            break;
+
+                        String[] ids = ligne.toUpperCase().split("\\s+");
+                        for (String currentId : ids) {
+                            if (currentId.trim().isEmpty())
+                                continue;
+                            Sommet s = g.getSommetParId(currentId.trim());
+                            if (s != null && !s.equals(g.getDepot()) && !points.contains(s)) {
+                                points.add(s);
+                                System.out.println("   Ajouté : " + s);
+                            } else if (s == null) {
+                                System.out.println("   Ignoré : " + currentId + " (sommet inconnu)");
+                            }
+                        }
+                    }
+
+                    if (!points.isEmpty() && points.size() <= 12) {
+                        System.out.println("\nRésolution TSP exact pour " + points.size() + " points...");
+
+                        // CORRIGÉ : plus de classe interne → on utilise List<Object>
+                        List<Object> res = TSPPetit.resoudreTSPExact(g, g.getDepot(), points);
+                        TSPPetit.afficherResultat(res, g); // cette méthode accepte List<Object>
+
+                    } else if (points.size() > 12) {
+                        System.out.println("Trop de points (>12) --> utilisez l’approche heuristique (menu 4 ou 5).");
+                    }
+                    Utils.appuyerPourContinuer();
+                    break;
+
+                case 3: // Postier Chinois
+                    Utils.afficherTitre("THÈME 1b - COLLECTE AUX PIEDS DES HABITATIONS (POSTIER CHINOIS)");
+                    PostierChinois.ResultatPostierChinois res = controleur.resoudrePostierChinois();
+                    PostierChinois.afficherResultat(res, g);
+                    Utils.appuyerPourContinuer();
+                    break;
+
+                case 4:
+                    double capa = Utils.lireDouble("Capacité du camion (tonnes) = ");
+                    controleur.calculerTourneesAvecCapacite(capa);
+                    Utils.appuyerPourContinuer();
+                    break;
+
+                case 5:
+                    double capaMST = Utils.lireDouble("Capacité du camion (tonnes) = ");
+                    controleur.calculerTourneesMST(capaMST);
+                    Utils.appuyerPourContinuer();
+                    break;
+                case 6:
+                    return;
+                default:
+                    System.out.println("Choix invalide !");
+            }
+        }
+    }
+}
