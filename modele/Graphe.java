@@ -100,18 +100,35 @@ public class Graphe {
      * @param s Le sommet.
      * @return Liste des voisins.
      */
+    /*
+     * public List<Sommet> getVoisins(Sommet s) {
+     * List<Sommet> voisins = new ArrayList<>();
+     * if (s == null)
+     * return voisins;
+     * 
+     * for (Arete a : aretes) {
+     * // Arête sortante
+     * if (a.getSource().equals(s)) {
+     * voisins.add(a.getDestination());
+     * }
+     * // Arête entrante si double sens
+     * if (a.estDoubleSens() && a.getDestination().equals(s)) {
+     * voisins.add(a.getSource());
+     * }
+     * }
+     * return voisins;
+     * }
+     */
     public List<Sommet> getVoisins(Sommet s) {
         List<Sommet> voisins = new ArrayList<>();
         if (s == null)
             return voisins;
 
         for (Arete a : aretes) {
-            // Arête sortante
             if (a.getSource().equals(s)) {
                 voisins.add(a.getDestination());
             }
-            // Arête entrante si double sens
-            if (a.estDoubleSens() && a.getDestination().equals(s)) {
+            if (a.getDestination().equals(s)) { // même si sens unique
                 voisins.add(a.getSource());
             }
         }
@@ -145,9 +162,9 @@ public class Graphe {
      * @param s Le sommet.
      * @return Le degré.
      */
+    // DANS Graphe.java – REMPLACE TA MÉTHODE getDegre() PAR CECI
+
     public int getDegre(Sommet s) {
-        if (s == null)
-            return 0;
         int degre = 0;
 
         for (Arete a : aretes) {
@@ -155,8 +172,8 @@ public class Graphe {
             if (a.getSource().equals(s)) {
                 degre++;
             }
-            // Arête entrante si double sens
-            if (a.estDoubleSens() && a.getDestination().equals(s)) {
+            // Arête entrante (même si sens unique)
+            if (a.getDestination().equals(s)) {
                 degre++;
             }
         }
