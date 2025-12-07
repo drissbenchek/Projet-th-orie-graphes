@@ -1,0 +1,83 @@
+package service;
+
+import modele.*;
+import java.util.*;
+
+/**
+ * Thème 3 – Hypothèse 1 : Planification des jours de collecte par secteur
+ * Deux secteurs voisins → jamais le même jour
+ * Le dépôt (sommet A) n'est PAS un secteur → exclu automatiquement
+ */
+public class PlanificationSecteurs {
+
+    public static void planifierJours(Graphe graphe) {
+        if (graphe == null || graphe.getSommets().isEmpty()) {
+            System.out.println("Aucun graphe chargé !");
+            return;
+        }
+
+        // 1. Filtrer les secteurs (exclure le dépôt A)
+        List<Sommet> secteurs = new ArrayList<>();
+        for (Sommet s : graphe.getSommets()) {
+            if (!"A".equals(s.getId())) { // Le dépôt est toujours "A"
+                secteurs.add(s);
+            }
+        }
+
+        if (secteurs.isEmpty()) {
+            System.out.println("Aucun secteur à planifier (seul le dépôt est présent).");
+            return;
+        }
+
+        // 2. Coloration gloutonne
+        Map<Sommet, Integer> jourParSecteur = new HashMap<>();
+
+        for (Sommet secteur : secteurs) {
+            Set<Integer> joursInterdits = new HashSet<>();
+
+            // Interdire les jours des voisins déjà colorés
+            for (Sommet voisin : graphe.getVoisins(secteur)) {
+                if (jourParSecteur.containsKey(voisin)) {
+                    joursInterdits.add(jourParSecteur.get(voisin));
+                }
+            }
+
+            // Prendre le plus petit jour disponible
+            int jour = 0;
+            while (joursInterdits.contains(jour)) {
+                jour++;
+            }
+            jourParSecteur.put(secteur, jour);
+        }
+
+        // 3. Calcul du nombre de jours
+        int nbJours = jourParSecteur.values().stream()
+                .max(Integer::compareTo).orElse(0) + 1;
+
+        // 4. Affichage professionnel
+        System.out.println("\n" + "=".repeat(80));
+        System.out.println("        THÈME 3 - PLANIFICATION DES JOURS DE COLLECTE (H1)");
+        System.out.println("        Deux secteurs voisins --> jamais le même jour");
+        System.out.println("        Le dépôt (A) n'est pas un secteur → exclu de la planification");
+        System.out.println("=".repeat(80));
+        System.out.printf("Nombre de secteurs à collecter : %d%n", secteurs.size());
+        System.out.printf("Nombre de jours nécessaires    : %d%n%n", nbJours);
+
+        // Affichage par jour
+        for (int j = 0; j < nbJours; j++) {
+            List<String> secteursDuJour = new ArrayList<>();
+            for (Map.Entry<Sommet, Integer> e : jourParSecteur.entrySet()) {
+                if (e.getValue() == j) {
+                    secteursDuJour.add(e.getKey().getId() + " (" + e.getKey().getNom() + ")");
+                }
+            }
+            if (!secteursDuJour.isEmpty()) {
+                System.out.printf("JOUR %d --> %s%n", j + 1, String.join(" | ", secteursDuJour));
+            }
+        }
+
+        System.out.println("=".repeat(80));
+        System.out.println("Planification terminée avec succès !");
+        System.out.println("=".repeat(80));
+    }
+}
