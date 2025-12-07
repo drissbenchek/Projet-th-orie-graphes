@@ -121,14 +121,11 @@ public class Graphe {
      */
     public List<Sommet> getVoisins(Sommet s) {
         List<Sommet> voisins = new ArrayList<>();
-        if (s == null)
-            return voisins;
-
         for (Arete a : aretes) {
             if (a.getSource().equals(s)) {
                 voisins.add(a.getDestination());
             }
-            if (a.getDestination().equals(s)) { // même si sens unique
+            if (a.estDoubleSens() && a.getDestination().equals(s)) {
                 voisins.add(a.getSource());
             }
         }
@@ -144,11 +141,9 @@ public class Graphe {
      */
     public Arete getArete(Sommet u, Sommet v) {
         for (Arete a : aretes) {
-            // Sens direct
             if (a.getSource().equals(u) && a.getDestination().equals(v)) {
                 return a;
             }
-            // Sens inverse → autorisé seulement si double sens
             if (a.estDoubleSens() && a.getSource().equals(v) && a.getDestination().equals(u)) {
                 return a;
             }
